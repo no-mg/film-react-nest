@@ -3,16 +3,14 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Film, FilmDocument } from './schemas/film.schema';
+import { FilmsRepository } from '../repository/films.repository';
 
 @Injectable()
 export class FilmsService {
-  constructor(@InjectModel(Film.name) private filmModel: Model<FilmDocument>) {}
+  constructor(private readonly filmsRepository: FilmsRepository) {}
 
   async getAllFilms() {
-    const films = await this.filmModel.find().exec();
+    const films = await this.filmsRepository.findAll();
 
     const items = films.map((film) => ({
       id: film.id,
@@ -33,7 +31,7 @@ export class FilmsService {
   }
 
   async getFilmSchedule(id: string) {
-    const film = await this.filmModel.findOne({ id }).exec();
+    const film = await this.filmsRepository.findById(id);
 
     if (!film) {
       throw new NotFoundException(`Film with id ${id} not found`);
@@ -50,7 +48,8 @@ export class FilmsService {
     sessionId: string,
     tickets: { row: number; seat: number }[],
   ) {
-    const film = await this.filmModel.findOne({ id: filmId });
+    const film = await this.filmsRepository.findById(filmId);
+    
     if (!film) {
       throw new NotFoundException('Film not found');
     }
