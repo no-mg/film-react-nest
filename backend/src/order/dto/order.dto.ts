@@ -2,12 +2,12 @@
 export class TicketDto {
   readonly film: string;
   readonly session: string;
-  readonly daytime: string;
-  readonly day: string;
-  readonly time: string;
+  readonly daytime?: string;
+  readonly day?: string;
+  readonly time?: string;
   readonly row: number;
   readonly seat: number;
-  readonly price: number;
+  readonly price?: number;
 }
 
 export class CreateOrderDto {
