@@ -44,7 +44,7 @@ import { OrderModule } from './order/order.module';
           ),
           database: configService.get<string>('DATABASE_NAME', 'exampledb'),
           autoLoadEntities: true,
-          synchronize: false,
+          synchronize: true,
         };
       },
       inject: [ConfigService],
