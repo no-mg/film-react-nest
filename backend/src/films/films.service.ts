@@ -38,8 +38,8 @@ export class FilmsService {
     }
 
     return {
-      total: film.schedule.length,
-      items: film.schedule,
+      total: film.schedules ? film.schedules.length : 0,
+      items: film.schedules || [],
     };
   }
 
@@ -49,20 +49,24 @@ export class FilmsService {
     tickets: { row: number; seat: number }[],
   ) {
     const film = await this.filmsRepository.findById(filmId);
-    
+
     if (!film) {
       throw new NotFoundException('Film not found');
     }
 
-    const session = film.schedule.find((s) => s.id === sessionId);
+    const session = film.schedules?.find((s) => s.id === sessionId);
     if (!session) {
       throw new NotFoundException('Session not found');
     }
 
+    const currentTakenArray = session.taken
+      ? session.taken.split(',').filter(Boolean)
+      : [];
+
     const requestedSeats = tickets.map((t) => `${t.row}:${t.seat}`);
 
     const alreadyTaken = requestedSeats.filter((seat) =>
-      session.taken.includes(seat),
+      currentTakenArray.includes(seat),
     );
 
     if (alreadyTaken.length > 0) {
@@ -71,10 +75,9 @@ export class FilmsService {
       );
     }
 
-    session.taken.push(...requestedSeats);
+    session.taken = [...currentTakenArray, ...requestedSeats].join(',');
 
-    film.markModified('schedule');
-    await film.save();
+    await this.filmsRepository.save(film);
 
     return session;
   }

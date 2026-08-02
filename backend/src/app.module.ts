@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import * as path from 'node:path';
 
 import { configProvider } from './app.config.provider';
@@ -14,11 +14,39 @@ import { OrderModule } from './order/order.module';
       isGlobal: true,
       cache: true,
     }),
-    MongooseModule.forRootAsync({
+    TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('DATABASE_URL'),
-      }),
+      useFactory: (configService: ConfigService) => {
+        const driver = configService.get<string>('DATABASE_DRIVER', 'postgres');
+
+        const databaseUrl = configService.get<string>('DATABASE_URL');
+
+        if (databaseUrl) {
+          return {
+            type: driver as 'postgres',
+            url: databaseUrl,
+            autoLoadEntities: true,
+            synchronize: false,
+          };
+        }
+
+        return {
+          type: driver as 'postgres',
+          host: configService.get<string>('DATABASE_HOST', 'localhost'),
+          port: configService.get<number>('DATABASE_PORT', 5432),
+          username: configService.get<string>(
+            'DATABASE_USERNAME',
+            'exampleuser',
+          ),
+          password: configService.get<string>(
+            'DATABASE_PASSWORD',
+            'examplepassword',
+          ),
+          database: configService.get<string>('DATABASE_NAME', 'exampledb'),
+          autoLoadEntities: true,
+          synchronize: false,
+        };
+      },
       inject: [ConfigService],
     }),
     ServeStaticModule.forRoot({
