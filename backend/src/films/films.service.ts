@@ -10,7 +10,6 @@ import { CreateOrderDto } from '../order/dto/order.dto';
 export class FilmsService {
   constructor(private readonly filmsRepository: FilmsRepository) {}
 
-  // Безопасный парсинг строки из БД в массив для API
   private parseTaken(taken?: string): string[] {
     if (!taken) return [];
     return taken.split(',').map((s) => s.trim()).filter(Boolean);
@@ -29,7 +28,7 @@ export class FilmsService {
       rows: s.rows,
       seats: s.seats,
       price: s.price,
-      taken: this.parseTaken(s.taken), // Отдаем массив
+      taken: this.parseTaken(s.taken),
     }));
   }
 
@@ -40,7 +39,7 @@ export class FilmsService {
       id: film.id,
       rating: film.rating,
       director: film.director,
-      tags: this.parseTags(film.tags), // Отдаем массив
+      tags: this.parseTags(film.tags),
       title: film.title,
       about: film.about,
       description: film.description,
@@ -97,6 +96,7 @@ export class FilmsService {
       items.push({
         film: ticket.film,
         session: ticket.session,
+        daytime: ticket.daytime,
         row: ticket.row,
         seat: ticket.seat,
         price: ticket.price,
