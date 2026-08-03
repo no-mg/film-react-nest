@@ -10,7 +10,7 @@ export class ScheduleEntity {
   daytime: string;
 
   @Column({ type: 'varchar' })
-  hall: number;
+  hall: string;
 
   @Column({ type: 'double precision' })
   price: number;
