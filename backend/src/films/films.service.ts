@@ -16,12 +16,13 @@ export class FilmsService {
       id: film.id,
       rating: film.rating,
       director: film.director,
-      tags: film.tags,
+      tags: Array.isArray(film.tags) ? film.tags : film.tags ? [film.tags] : [],
       title: film.title,
       about: film.about,
       description: film.description,
       image: film.image,
       cover: film.cover,
+      schedule: film.schedules || [],
     }));
 
     return {
@@ -43,28 +44,59 @@ export class FilmsService {
     };
   }
 
+  async createOrder(dto: any) {
+    const { tickets } = dto;
+    const items = [];
+
+    for (const ticket of tickets) {
+      const film = await this.filmsRepository.findById(ticket.film);
+      if (!film) throw new NotFoundException('Film not found');
+
+      const session = film.schedules?.find((s) => s.id === ticket.session);
+      if (!session) throw new NotFoundException('Session not found');
+
+      const currentTakenArray = session.taken
+        ? session.taken.split(',').filter(Boolean)
+        : [];
+
+      const seatStr = `${ticket.row}:${ticket.seat}`;
+      if (currentTakenArray.includes(seatStr)) {
+        throw new BadRequestException(`Seat ${seatStr} already taken`);
+      }
+
+      session.taken = [...currentTakenArray, seatStr].join(',');
+      await this.filmsRepository.save(film);
+
+      items.push({
+        film: ticket.film,
+        session: ticket.session,
+        row: ticket.row,
+        seat: ticket.seat,
+        price: ticket.price,
+      });
+    }
+
+    return {
+      total: items.length,
+      items,
+    };
+  }
+
   async bookTickets(
     filmId: string,
     sessionId: string,
     tickets: { row: number; seat: number }[],
   ) {
     const film = await this.filmsRepository.findById(filmId);
-
-    if (!film) {
-      throw new NotFoundException('Film not found');
-    }
+    if (!film) throw new NotFoundException('Film not found');
 
     const session = film.schedules?.find((s) => s.id === sessionId);
-    if (!session) {
-      throw new NotFoundException('Session not found');
-    }
+    if (!session) throw new NotFoundException('Session not found');
 
     const currentTakenArray = session.taken
       ? session.taken.split(',').filter(Boolean)
       : [];
-
     const requestedSeats = tickets.map((t) => `${t.row}:${t.seat}`);
-
     const alreadyTaken = requestedSeats.filter((seat) =>
       currentTakenArray.includes(seat),
     );
@@ -76,7 +108,6 @@ export class FilmsService {
     }
 
     session.taken = [...currentTakenArray, ...requestedSeats].join(',');
-
     await this.filmsRepository.save(film);
 
     return session;
