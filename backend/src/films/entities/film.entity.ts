@@ -6,14 +6,14 @@ export class FilmEntity {
   @PrimaryColumn({ type: 'uuid' })
   id: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'double precision' })
   rating: number;
 
   @Column({ type: 'varchar' })
   director: string;
 
-  @Column({ type: 'varchar', array: true })
-  tags: string[];
+  @Column({ type: 'text' })
+  tags: string; 
 
   @Column({ type: 'varchar' })
   image: string;

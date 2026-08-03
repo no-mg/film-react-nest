@@ -9,17 +9,17 @@ export class ScheduleEntity {
   @Column({ type: 'varchar' })
   daytime: string;
 
-  @Column({ type: 'varchar' })
-  hall: string;
-
-  @Column({ type: 'double precision' })
-  price: number;
+  @Column({ type: 'integer' })
+  hall: number;
 
   @Column({ type: 'integer' })
   rows: number;
 
   @Column({ type: 'integer' })
   seats: number;
+
+  @Column({ type: 'double precision' })
+  price: number;
 
   @Column({ type: 'text' })
   taken: string;

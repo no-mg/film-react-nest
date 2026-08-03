@@ -27,7 +27,7 @@ import { OrderModule } from './order/order.module';
       password: configService.get<string>('DATABASE_PASSWORD', 'postgres'),
       database: configService.get<string>('DATABASE_NAME', 'films'),
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
     };
   },
   inject: [ConfigService],
