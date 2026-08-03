@@ -18,15 +18,16 @@ import { OrderModule } from './order/order.module';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         const driver = configService.get<string>('DATABASE_DRIVER', 'postgres');
-
         const databaseUrl = configService.get<string>('DATABASE_URL');
+
+        const isTestDb = databaseUrl?.includes('/films');
 
         if (databaseUrl) {
           return {
             type: driver as 'postgres',
             url: databaseUrl,
             autoLoadEntities: true,
-            synchronize: false,
+            synchronize: isTestDb ? true : false,
           };
         }
 
@@ -34,17 +35,11 @@ import { OrderModule } from './order/order.module';
           type: driver as 'postgres',
           host: configService.get<string>('DATABASE_HOST', 'localhost'),
           port: configService.get<number>('DATABASE_PORT', 5432),
-          username: configService.get<string>(
-            'DATABASE_USERNAME',
-            'exampleuser',
-          ),
-          password: configService.get<string>(
-            'DATABASE_PASSWORD',
-            'examplepassword',
-          ),
-          database: configService.get<string>('DATABASE_NAME', 'exampledb'),
+          username: configService.get<string>('DATABASE_USERNAME', 'postgres'),
+          password: configService.get<string>('DATABASE_PASSWORD', 'postgres'),
+          database: configService.get<string>('DATABASE_NAME', 'films'),
           autoLoadEntities: true,
-          synchronize: true,
+          synchronize: false,
         };
       },
       inject: [ConfigService],
