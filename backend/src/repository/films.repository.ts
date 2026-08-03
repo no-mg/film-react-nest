@@ -11,7 +11,9 @@ export class FilmsRepository {
   ) {}
 
   async findAll(): Promise<FilmEntity[]> {
-    return this.filmRepository.find();
+    return this.filmRepository.find({
+      relations: ['schedules'],
+    });
   }
 
   async save(film: FilmEntity): Promise<FilmEntity> {

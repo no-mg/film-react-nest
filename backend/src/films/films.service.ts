@@ -4,10 +4,34 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FilmsRepository } from '../repository/films.repository';
+import { CreateOrderDto } from '../order/dto/order.dto';
 
 @Injectable()
 export class FilmsService {
   constructor(private readonly filmsRepository: FilmsRepository) {}
+
+  // Безопасный парсинг строки из БД в массив для API
+  private parseTaken(taken?: string): string[] {
+    if (!taken) return [];
+    return taken.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+
+  private parseTags(tags?: string): string[] {
+    if (!tags) return [];
+    return tags.split(',').map((t) => t.trim()).filter(Boolean);
+  }
+
+  private formatSchedule(schedules: any[]) {
+    return (schedules || []).map((s) => ({
+      id: s.id,
+      daytime: s.daytime,
+      hall: s.hall,
+      rows: s.rows,
+      seats: s.seats,
+      price: s.price,
+      taken: this.parseTaken(s.taken), // Отдаем массив
+    }));
+  }
 
   async getAllFilms() {
     const films = await this.filmsRepository.findAll();
@@ -16,13 +40,13 @@ export class FilmsService {
       id: film.id,
       rating: film.rating,
       director: film.director,
-      tags: Array.isArray(film.tags) ? film.tags : film.tags ? [film.tags] : [],
+      tags: this.parseTags(film.tags), // Отдаем массив
       title: film.title,
       about: film.about,
       description: film.description,
       image: film.image,
       cover: film.cover,
-      schedule: film.schedules || [],
+      schedule: this.formatSchedule(film.schedules),
     }));
 
     return {
@@ -38,13 +62,15 @@ export class FilmsService {
       throw new NotFoundException(`Film with id ${id} not found`);
     }
 
+    const items = this.formatSchedule(film.schedules);
+
     return {
-      total: film.schedules ? film.schedules.length : 0,
-      items: film.schedules || [],
+      total: items.length,
+      items,
     };
   }
 
-  async createOrder(dto: any) {
+  async createOrder(dto: CreateOrderDto) {
     const { tickets } = dto;
     const items = [];
 
@@ -55,16 +81,17 @@ export class FilmsService {
       const session = film.schedules?.find((s) => s.id === ticket.session);
       if (!session) throw new NotFoundException('Session not found');
 
-      const currentTakenArray = session.taken
-        ? session.taken.split(',').filter(Boolean)
-        : [];
-
+      const currentTakenArray = this.parseTaken(session.taken);
       const seatStr = `${ticket.row}:${ticket.seat}`;
+      
       if (currentTakenArray.includes(seatStr)) {
         throw new BadRequestException(`Seat ${seatStr} already taken`);
       }
 
-      session.taken = [...currentTakenArray, seatStr].join(',');
+      currentTakenArray.push(seatStr);
+
+      session.taken = currentTakenArray.join(',');
+      
       await this.filmsRepository.save(film);
 
       items.push({
@@ -93,21 +120,16 @@ export class FilmsService {
     const session = film.schedules?.find((s) => s.id === sessionId);
     if (!session) throw new NotFoundException('Session not found');
 
-    const currentTakenArray = session.taken
-      ? session.taken.split(',').filter(Boolean)
-      : [];
+    const currentTakenArray = this.parseTaken(session.taken);
     const requestedSeats = tickets.map((t) => `${t.row}:${t.seat}`);
-    const alreadyTaken = requestedSeats.filter((seat) =>
-      currentTakenArray.includes(seat),
-    );
+    const alreadyTaken = requestedSeats.filter((seat) => currentTakenArray.includes(seat));
 
     if (alreadyTaken.length > 0) {
-      throw new BadRequestException(
-        `Seats already taken: ${alreadyTaken.join(', ')}`,
-      );
+      throw new BadRequestException(`Seats already taken: ${alreadyTaken.join(', ')}`);
     }
 
-    session.taken = [...currentTakenArray, ...requestedSeats].join(',');
+    const newTaken = [...currentTakenArray, ...requestedSeats];
+    session.taken = newTaken.join(',');
     await this.filmsRepository.save(film);
 
     return session;
