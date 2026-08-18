@@ -4,10 +4,33 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FilmsRepository } from '../repository/films.repository';
+import { CreateOrderDto } from '../order/dto/order.dto';
 
 @Injectable()
 export class FilmsService {
   constructor(private readonly filmsRepository: FilmsRepository) {}
+
+  private parseTaken(taken?: string): string[] {
+    if (!taken) return [];
+    return taken.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+
+  private parseTags(tags?: string): string[] {
+    if (!tags) return [];
+    return tags.split(',').map((t) => t.trim()).filter(Boolean);
+  }
+
+  private formatSchedule(schedules: any[]) {
+    return (schedules || []).map((s) => ({
+      id: s.id,
+      daytime: s.daytime,
+      hall: s.hall,
+      rows: s.rows,
+      seats: s.seats,
+      price: s.price,
+      taken: this.parseTaken(s.taken),
+    }));
+  }
 
   async getAllFilms() {
     const films = await this.filmsRepository.findAll();
@@ -16,12 +39,13 @@ export class FilmsService {
       id: film.id,
       rating: film.rating,
       director: film.director,
-      tags: film.tags,
+      tags: this.parseTags(film.tags),
       title: film.title,
       about: film.about,
       description: film.description,
       image: film.image,
       cover: film.cover,
+      schedule: this.formatSchedule(film.schedules),
     }));
 
     return {
@@ -37,9 +61,51 @@ export class FilmsService {
       throw new NotFoundException(`Film with id ${id} not found`);
     }
 
+    const items = this.formatSchedule(film.schedules);
+
     return {
-      total: film.schedule.length,
-      items: film.schedule,
+      total: items.length,
+      items,
+    };
+  }
+
+  async createOrder(dto: CreateOrderDto) {
+    const { tickets } = dto;
+    const items = [];
+
+    for (const ticket of tickets) {
+      const film = await this.filmsRepository.findById(ticket.film);
+      if (!film) throw new NotFoundException('Film not found');
+
+      const session = film.schedules?.find((s) => s.id === ticket.session);
+      if (!session) throw new NotFoundException('Session not found');
+
+      const currentTakenArray = this.parseTaken(session.taken);
+      const seatStr = `${ticket.row}:${ticket.seat}`;
+      
+      if (currentTakenArray.includes(seatStr)) {
+        throw new BadRequestException(`Seat ${seatStr} already taken`);
+      }
+
+      currentTakenArray.push(seatStr);
+
+      session.taken = currentTakenArray.join(',');
+      
+      await this.filmsRepository.save(film);
+
+      items.push({
+        film: ticket.film,
+        session: ticket.session,
+        daytime: ticket.daytime,
+        row: ticket.row,
+        seat: ticket.seat,
+        price: ticket.price,
+      });
+    }
+
+    return {
+      total: items.length,
+      items,
     };
   }
 
@@ -49,32 +115,22 @@ export class FilmsService {
     tickets: { row: number; seat: number }[],
   ) {
     const film = await this.filmsRepository.findById(filmId);
-    
-    if (!film) {
-      throw new NotFoundException('Film not found');
-    }
+    if (!film) throw new NotFoundException('Film not found');
 
-    const session = film.schedule.find((s) => s.id === sessionId);
-    if (!session) {
-      throw new NotFoundException('Session not found');
-    }
+    const session = film.schedules?.find((s) => s.id === sessionId);
+    if (!session) throw new NotFoundException('Session not found');
 
+    const currentTakenArray = this.parseTaken(session.taken);
     const requestedSeats = tickets.map((t) => `${t.row}:${t.seat}`);
-
-    const alreadyTaken = requestedSeats.filter((seat) =>
-      session.taken.includes(seat),
-    );
+    const alreadyTaken = requestedSeats.filter((seat) => currentTakenArray.includes(seat));
 
     if (alreadyTaken.length > 0) {
-      throw new BadRequestException(
-        `Seats already taken: ${alreadyTaken.join(', ')}`,
-      );
+      throw new BadRequestException(`Seats already taken: ${alreadyTaken.join(', ')}`);
     }
 
-    session.taken.push(...requestedSeats);
-
-    film.markModified('schedule');
-    await film.save();
+    const newTaken = [...currentTakenArray, ...requestedSeats];
+    session.taken = newTaken.join(',');
+    await this.filmsRepository.save(film);
 
     return session;
   }
