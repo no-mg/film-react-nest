@@ -24,7 +24,7 @@ describe('FilmsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FilmsService,
-        FilmsRepository,  // <-- Добавьте это
+        FilmsRepository, // <-- Добавьте это
         {
           provide: getRepositoryToken(FilmEntity),
           useValue: mockFilmsRepository,

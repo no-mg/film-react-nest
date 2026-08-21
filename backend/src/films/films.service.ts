@@ -12,12 +12,18 @@ export class FilmsService {
 
   private parseTaken(taken?: string): string[] {
     if (!taken) return [];
-    return taken.split(',').map((s) => s.trim()).filter(Boolean);
+    return taken
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
 
   private parseTags(tags?: string): string[] {
     if (!tags) return [];
-    return tags.split(',').map((t) => t.trim()).filter(Boolean);
+    return tags
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
   }
 
   private formatSchedule(schedules: any[]) {
@@ -82,7 +88,7 @@ export class FilmsService {
 
       const currentTakenArray = this.parseTaken(session.taken);
       const seatStr = `${ticket.row}:${ticket.seat}`;
-      
+
       if (currentTakenArray.includes(seatStr)) {
         throw new BadRequestException(`Seat ${seatStr} already taken`);
       }
@@ -90,7 +96,7 @@ export class FilmsService {
       currentTakenArray.push(seatStr);
 
       session.taken = currentTakenArray.join(',');
-      
+
       await this.filmsRepository.save(film);
 
       items.push({
@@ -122,10 +128,14 @@ export class FilmsService {
 
     const currentTakenArray = this.parseTaken(session.taken);
     const requestedSeats = tickets.map((t) => `${t.row}:${t.seat}`);
-    const alreadyTaken = requestedSeats.filter((seat) => currentTakenArray.includes(seat));
+    const alreadyTaken = requestedSeats.filter((seat) =>
+      currentTakenArray.includes(seat),
+    );
 
     if (alreadyTaken.length > 0) {
-      throw new BadRequestException(`Seats already taken: ${alreadyTaken.join(', ')}`);
+      throw new BadRequestException(
+        `Seats already taken: ${alreadyTaken.join(', ')}`,
+      );
     }
 
     const newTaken = [...currentTakenArray, ...requestedSeats];

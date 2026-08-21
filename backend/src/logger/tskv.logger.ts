@@ -2,14 +2,21 @@ import { LoggerService, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class TskvLogger implements LoggerService {
-  private format(level: string, message: any, ...optionalParams: any[]): string {
+  private format(
+    level: string,
+    message: any,
+    ...optionalParams: any[]
+  ): string {
     const parts: string[] = [];
     parts.push(`level=${level}`);
     parts.push(`time=${new Date().toISOString()}`);
 
     const addParam = (key: string, value: any) => {
       let strValue = typeof value === 'string' ? value : JSON.stringify(value);
-      strValue = strValue.replace(/\t/g, '\\t').replace(/\n/g, '\\n').replace(/=/g, '\\=');
+      strValue = strValue
+        .replace(/\t/g, '\\t')
+        .replace(/\n/g, '\\n')
+        .replace(/=/g, '\\=');
       parts.push(`${key}=${strValue}`);
     };
 
