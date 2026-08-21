@@ -5,8 +5,9 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM alpine:latest
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-VOLUME /app/dist
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
