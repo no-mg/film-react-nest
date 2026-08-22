@@ -15,23 +15,23 @@ import { OrderModule } from './order/order.module';
       cache: true,
     }),
     TypeOrmModule.forRootAsync({
-  imports: [ConfigModule],
-  useFactory: (configService: ConfigService) => {
-    const driver = configService.get<string>('DATABASE_DRIVER', 'postgres');
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => {
+        const driver = configService.get<string>('DATABASE_DRIVER', 'postgres');
 
-    return {
-      type: driver as 'postgres',
-      host: configService.get<string>('DATABASE_HOST', 'localhost'),
-      port: configService.get<number>('DATABASE_PORT', 5432),
-      username: configService.get<string>('DATABASE_USERNAME', 'postgres'),
-      password: configService.get<string>('DATABASE_PASSWORD', 'postgres'),
-      database: configService.get<string>('DATABASE_NAME', 'films'),
-      autoLoadEntities: true,
-      synchronize: false,
-    };
-  },
-  inject: [ConfigService],
-}),
+        return {
+          type: driver as 'postgres',
+          host: configService.get<string>('DATABASE_HOST', 'localhost'),
+          port: configService.get<number>('DATABASE_PORT', 5432),
+          username: configService.get<string>('DATABASE_USERNAME', 'postgres'),
+          password: configService.get<string>('DATABASE_PASSWORD', 'postgres'),
+          database: configService.get<string>('DATABASE_NAME', 'films'),
+          autoLoadEntities: true,
+          synchronize: false,
+        };
+      },
+      inject: [ConfigService],
+    }),
     ServeStaticModule.forRoot({
       rootPath: path.join(__dirname, '..', 'public'),
     }),

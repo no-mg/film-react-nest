@@ -13,7 +13,7 @@ export class FilmEntity {
   director: string;
 
   @Column({ type: 'text' })
-  tags: string; 
+  tags: string;
 
   @Column({ type: 'varchar' })
   image: string;
