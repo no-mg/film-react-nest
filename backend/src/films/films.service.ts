@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { FilmsRepository } from '../repository/films.repository';
 import { CreateOrderDto } from '../order/dto/order.dto';
+import { ScheduleEntity } from '../films/entities/schedule.entity'; 
 
 @Injectable()
 export class FilmsService {
@@ -26,7 +27,7 @@ export class FilmsService {
       .filter(Boolean);
   }
 
-  private formatSchedule(schedules: any[]) {
+  private formatSchedule(schedules: ScheduleEntity[] | undefined) {
     return (schedules || []).map((s) => ({
       id: s.id,
       daytime: s.daytime,

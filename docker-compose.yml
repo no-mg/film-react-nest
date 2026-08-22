@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   database:
@@ -19,8 +19,8 @@ services:
     container_name: film_pgadmin
     restart: always
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
     ports:
       - "8080:80"
     volumes:
@@ -31,7 +31,7 @@ services:
       - database
 
   backend:
-    build: 
+    build:
       context: ./backend
     image: ghcr.io/no-mg/film-backend:latest
     container_name: film_backend
@@ -51,13 +51,14 @@ services:
       context: ./frontend
     image: ghcr.io/no-mg/film-frontend:latest
     container_name: film_frontend
+    restart: always
     volumes:
       - frontend-dist:/app/dist
     networks:
       - app-network
 
   nginx:
-    build: 
+    build:
       context: ./nginx
     image: ghcr.io/no-mg/film-nginx:latest
     container_name: film_nginx
